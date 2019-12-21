@@ -12,9 +12,11 @@ To create a custom auto-configuration, we need to create a class annotated as @C
 Let's create a custom configuration for a MySQL data source:
 
 @Configuration
+
 public class MySQLAutoconfiguration {
     //...
 }
+
 The next mandatory step is registering the class as an auto-configuration candidate, by adding the name of the class under the key org.springframework.boot.autoconfigure.EnableAutoConfiguration in the standard file resources/META-INF/spring.factories:
 
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
@@ -32,11 +34,11 @@ Class conditions allow us to specify that a configuration bean will be included 
 
 Let's specify that our MySQLConfiguration will only be loaded if the class DataSource is present, in which case we can assume the application will use a database:
 
-@Configuration
-@ConditionalOnClass(DataSource.class)
-public class MySQLAutoconfiguration {
+ @Configuration
+ @ConditionalOnClass(DataSource.class)
+ public class MySQLAutoconfiguration {
     //...
-}
+ }
 
 
  ### 2. Bean Conditions
