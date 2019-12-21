@@ -35,10 +35,15 @@ Class conditions allow us to specify that a configuration bean will be included 
 Let's specify that our MySQLConfiguration will only be loaded if the class DataSource is present, in which case we can assume the application will use a database:
 
  @Configuration
+ 
  @ConditionalOnClass(DataSource.class)
+ 
  public class MySQLAutoconfiguration {
+ 
     //...
+    
  }
+ 
 
 
  ### 2. Bean Conditions
@@ -47,26 +52,45 @@ If we want to include a bean only if a specified bean is present or not, we can 
 To exemplify this, let's add an entityManagerFactory bean to our configuration class, and specify we only want this bean to be created if a bean called dataSource is present and if a bean called entityManagerFactory is not already defined:
 
 @Bean
+
 @ConditionalOnBean(name = "dataSource")
+
 @ConditionalOnMissingBean
+
 public LocalContainerEntityManagerFactoryBean entityManagerFactory() {
+
     LocalContainerEntityManagerFactoryBean em
+    
       = new LocalContainerEntityManagerFactoryBean();
+      
     em.setDataSource(dataSource());
+    
     em.setPackagesToScan("com.baeldung.autoconfiguration.example");
+    
     em.setJpaVendorAdapter(new HibernateJpaVendorAdapter());
+    
     if (additionalProperties() != null) {
+    
         em.setJpaProperties(additionalProperties());
+        
     }
+    
     return em;
+    
 }
+
 Let's also configure a transactionManager bean that will only be loaded if a bean of type JpaTransactionManager is not already defined:
 
-@Bean
-@ConditionalOnMissingBean(type = "JpaTransactionManager")
-JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+ @Bean
+ 
+ @ConditionalOnMissingBean(type = "JpaTransactionManager")
+ 
+ JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+    
     JpaTransactionManager transactionManager = new JpaTransactionManager();
+    
     transactionManager.setEntityManagerFactory(entityManagerFactory);
+    
     return transactionManager;
 }
 
@@ -75,10 +99,15 @@ The @ConditionalOnProperty annotation is used to specify if a configuration will
 
 First, let's add a property source file for our configuration that will determine where the properties will be read from:
 
+
 @PropertySource("classpath:mysql.properties")
+
 public class MySQLAutoconfiguration {
+
     //...
+    
 }
+
 We can configure the main DataSource bean that will be used to create connections to the database in such a way that it will only be loaded if a property called usemysql is present.
 
 We can use the attribute havingValue to specify certain values of the usemysql property that have to be matched.
@@ -86,38 +115,50 @@ We can use the attribute havingValue to specify certain values of the usemysql p
 Let's define the dataSource bean with default values that connect to a local database called myDb if the usemysql property is set to local:
 
 @Bean
-@ConditionalOnProperty(
-  name = "usemysql", 
-  havingValue = "local")
+
+@ConditionalOnProperty(name = "usemysql", havingValue = "local")
+
 @ConditionalOnMissingBean
+
 public DataSource dataSource() {
-    DriverManagerDataSource dataSource = new DriverManagerDataSource();
+
+DriverManagerDataSource dataSource = new DriverManagerDataSource();
   
     dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+    
     dataSource.setUrl("jdbc:mysql://localhost:3306/myDb?createDatabaseIfNotExist=true");
+    
     dataSource.setUsername("mysqluser");
+    
     dataSource.setPassword("mysqlpass");
  
     return dataSource;
 }
+
 If the usemysql property is set to custom, the dataSource bean will be configured using custom properties values for the database URL, user, and password:
 
 @Bean(name = "dataSource")
+
 @ConditionalOnProperty(
   name = "usemysql", 
   havingValue = "custom")
+
 @ConditionalOnMissingBean
+
 public DataSource dataSource2() {
-    DriverManagerDataSource dataSource = new DriverManagerDataSource();
+
+DriverManagerDataSource dataSource = new DriverManagerDataSource();
          
-    dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-    dataSource.setUrl(env.getProperty("mysql.url"));
-    dataSource.setUsername(env.getProperty("mysql.user") != null
-      ? env.getProperty("mysql.user") : "");
-    dataSource.setPassword(env.getProperty("mysql.pass") != null
-      ? env.getProperty("mysql.pass") : "");
+dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+
+dataSource.setUrl(env.getProperty("mysql.url"));
+
+dataSource.setUsername(env.getProperty("mysql.user") != null? env.getProperty("mysql.user") : "");
+    
+dataSource.setPassword(env.getProperty("mysql.pass") != null? env.getProperty("mysql.pass") : "");
          
-    return dataSource;
+return dataSource;
+
 }
 
 The mysql.properties file will contain the usemysql property:
@@ -131,60 +172,90 @@ Adding the @ConditionalOnResource annotation means that the configuration will o
 
 Let's define a method called additionalProperties() that will return a Properties object containing Hibernate-specific properties to be used by the entityManagerFactory bean, only if the resource file mysql.properties is present:
 
-@ConditionalOnResource(
-  resources = "classpath:mysql.properties")
+@ConditionalOnResource(resources = "classpath:mysql.properties")
+
 @Conditional(HibernateCondition.class)
+
 Properties additionalProperties() {
-    Properties hibernateProperties = new Properties();
+
+Properties hibernateProperties = new Properties();
  
-    hibernateProperties.setProperty("hibernate.hbm2ddl.auto", 
-      env.getProperty("mysql-hibernate.hbm2ddl.auto"));
-    hibernateProperties.setProperty("hibernate.dialect", 
-      env.getProperty("mysql-hibernate.dialect"));
-    hibernateProperties.setProperty("hibernate.show_sql", 
-      env.getProperty("mysql-hibernate.show_sql") != null
-      ? env.getProperty("mysql-hibernate.show_sql") : "false");
-    return hibernateProperties;
+
+hibernateProperties.setProperty("hibernate.hbm2ddl.auto", 
+
+env.getProperty("mysql-hibernate.hbm2ddl.auto"));
+
+hibernateProperties.setProperty("hibernate.dialect", 
+
+env.getProperty("mysql-hibernate.dialect"));
+
+hibernateProperties.setProperty("hibernate.show_sql", 
+
+env.getProperty("mysql-hibernate.show_sql") != null? env.getProperty("mysql-hibernate.show_sql") : "false");
+
+return hibernateProperties;
+
 }
+
+
 We can add the Hibernate specific properties to the mysql.properties file:
 
 mysql-hibernate.dialect=org.hibernate.dialect.MySQLDialect
+
 mysql-hibernate.show_sql=true
+
 mysql-hibernate.hbm2ddl.auto=create-drop
+
 
  ### 5. Custom Conditions
 If we don't want to use any of the conditions available in Spring Boot, we can also define custom conditions by extending the SpringBootCondition class and overriding the getMatchOutcome() method.
 
 Let's create a condition called HibernateCondition for our additionalProperties() method that will verify whether a HibernateEntityManager class is present on the classpath:
 
+
 static class HibernateCondition extends SpringBootCondition {
  
-    private static String[] CLASS_NAMES
-      = { "org.hibernate.ejb.HibernateEntityManager", 
-          "org.hibernate.jpa.HibernateEntityManager" };
+private static String[] CLASS_NAMES= { "org.hibernate.ejb.HibernateEntityManager", "org.hibernate.jpa.HibernateEntityManager" };
  
     @Override
+    
     public ConditionOutcome getMatchOutcome(ConditionContext context, 
+      
       AnnotatedTypeMetadata metadata) {
   
+        
         ConditionMessage.Builder message
+          
           = ConditionMessage.forCondition("Hibernate");
+        
         return Arrays.stream(CLASS_NAMES)
+          
           .filter(className -> ClassUtils.isPresent(className, context.getClassLoader()))
+          
           .map(className -> ConditionOutcome
-            .match(message.found("class")
-            .items(Style.NORMAL, className)))
-          .findAny()
-          .orElseGet(() -> ConditionOutcome
-            .noMatch(message.didNotFind("class", "classes")
-            .items(Style.NORMAL, Arrays.asList(CLASS_NAMES))));
+           
+           .match(message.found("class")
+          
+          .items(Style.NORMAL, className)))
+         
+         .findAny()
+         
+         .orElseGet(() -> ConditionOutcome
+           
+           .noMatch(message.didNotFind("class", "classes")
+           
+           .items(Style.NORMAL, Arrays.asList(CLASS_NAMES))));
     }
 }
+
 Then we can add the condition to the additionalProperties() method:
 
 @Conditional(HibernateCondition.class)
+
 Properties additionalProperties() {
+
   //...
+  
 }
 
  ### 6. Application Conditions
