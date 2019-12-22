@@ -298,6 +298,7 @@ On starting our application, Spring Boot checks for a specific file named as spr
 
 # Auto Configure
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+
 org.springframework.boot.autoconfigure.admin.SpringApplicationAdminJmxAutoConfiguration,\
 
 All auto configuration classes should list under EnableAutoConfiguration key in the spring.factories property file.Let’s pay our attention to few key points in the auto-configuration file entry.
@@ -313,24 +314,37 @@ Spring Boot use annotations to determine if an autoconfiguration class needs to 
 #### Here is an example of MailSenderAutoConfiguration class
 
 @Configuration
+
 @ConditionalOnClass({ MimeMessage.class, MimeType.class })
+
 @ConditionalOnMissingBean(MailSender.class)
+
 @Conditional(MailSenderCondition.class)
+
 @EnableConfigurationProperties(MailProperties.class)
+
 @Import(JndiSessionConfiguration.class)
+
 public class MailSenderAutoConfiguration {
+
 // required configurations
+
 }
 
 ### 1.3 Conditional Annotation
 Spring Boot use default values for the beans initialization. These defaults are based on the Spring environment properties.@EnableConfigurationProperties is declared with MailProperties class.Here is the code snippet for this class
 
 @ConfigurationProperties(prefix = "spring.mail")
+
 public class MailProperties {
-   private static final Charset DEFAULT_CHARSET = 
-   StandardCharsets.UTF_8;
+
+private static final Charset DEFAULT_CHARSET = 
+
+StandardCharsets.UTF_8;
    
-   private Integer port; 
+
+private Integer port; 
+
 }
 
 Properties defined in the MailProperties file are the default properties for MailSenderAutoConfiguration class while initializing beans. Spring Boot allows us to override these configuration properties using application.properties file. To override default port, we need to add the following entry in our application.properties file.
@@ -358,6 +372,7 @@ The pom.xml file for bringing required dependencies to our custom starter.
  
 
 ### 2.2 Property and Service Class
+
 package com.javadevjournal.service;
 
 public interface HelloService {
@@ -366,33 +381,45 @@ public interface HelloService {
 }
 
 //Impl Service
+
 public class HelloServiceImpl implements HelloService {
 
     @Override
-    public void hello() {
-        System.out.println("Hello from the default starter");
-    }
+
+public void hello() {
+
+System.out.println("Hello from the default starter");
+
+}
+
 }
 
 #### 2.3 The AutoConfigure Module and Class
 @Configuration
+
 @ConditionalOnClass(HelloService.class)
+
 public class HelloServiceAutoConfiguration {
 
-
     //conditional bean creation
-    @Bean
-    @ConditionalOnMissingBean
-    public HelloService helloService(){
 
-        return new HelloServiceImpl();
-    }
+@Bean
+
+@ConditionalOnMissingBean
+
+public HelloService helloService(){
+
+return new HelloServiceImpl();
+
+}
+
 }
 
 The final piece of our auto-configuration is the addition of this class in the spring.factories property file located in the /src/main/resources/META-INF.
 
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.javadevjournal.config.HelloServiceAutoConfiguration
-Copy
+
+
 On application startup
 
 HelloServiceAutoConfiguration will run if HelloService class is available in the classpath. ( @ConditionOnClass annotation).
@@ -405,6 +432,7 @@ The last part of the custom starter is the pom.xml to bring in all the required 
 
 
 <?xml version="1.0" encoding="UTF-8"?>
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
@@ -472,21 +500,31 @@ Let’s create a sample Spring Boot application to use our custom starter. Once 
 
 Here is our Spring Boot starter class
 
+
 @SpringBootApplication
+
 public class CustomStarterAppApplication implements CommandLineRunner {
 
 	@Autowired
-    HelloService service;
 
-    public static void main(String[] args) {
+HelloService service;
 
-		SpringApplication.run(CustomStarterAppApplication.class, args);
-	}
 
-    @Override
-    public void run(String... strings) throws Exception {
-        service.hello();
-    }
+public static void main(String[] args) {
+
+
+SpringApplication.run(CustomStarterAppApplication.class, args);
+
+}
+
+
+@Override
+
+public void run(String... strings) throws Exception {
+
+service.hello();
+
+}
 
 If we run our application, you will see following output in the console
 
@@ -499,34 +537,53 @@ Hello from the default starter
 We have defined no HelloService is our demo application. When Spring Boot started, auto-configuration did not find any custom bean definition. Our custom starter auto configuration class created default “HelloService” bean. (as visible from the output).To understand Spring Boot auto-configuration logic and functionality, let’s create a custom HelloService bean in our sample application
 
 public class CustomHelloService implements HelloService {
-
+    
     @Override
+    
     public void hello() {
-        System.out.println("We are overriding our custom Hello Service");
+    
+    System.out.println("We are overriding our custom Hello Service");
+    
     }
+
 }
 
 //bean bean definition
+
 @SpringBootApplication
+
 public class CustomStarterAppApplication implements CommandLineRunner {
 
 	@Autowired
-    HelloService service;
 
-    public static void main(String[] args) {
+HelloService service;
 
-		SpringApplication.run(CustomStarterAppApplication.class, args);
-	}
 
-    @Override
-    public void run(String... strings) throws Exception {
-        service.hello();
-    }
+public static void main(String[] args) {
 
-    @Bean
-    public  HelloService helloService(){
-        return new CustomHelloService();
-    }
+
+SpringApplication.run(CustomStarterAppApplication.class, args);
+
+}
+
+
+@Override
+
+public void run(String... strings) throws Exception {
+
+service.hello();
+
+}
+
+
+@Bean
+
+public  HelloService helloService(){
+
+return new CustomHelloService();
+
+}
+
 }
 
 Here is the output on running this application
@@ -534,5 +591,6 @@ Here is the output on running this application
 2018-01-23 20:36:48.991  INFO 20529 --- [           main] o.s.j.e.a.AnnotationMBeanExporter        : Registering beans for JMX exposure on startup
 We are overriding our custom Hello Service
 2018-01-23 20:36:49.000  INFO 20529 --- [           main] c.j.CustomStarterAppApplication          : Started CustomStarterAppApplication in 0.701 seconds
-Copy
+
+
 When we defined our custom bean, Spring Boot default HelloService is no longer available. This enables developers to completely override default bean definition by creating/ providing their own bean definition.
